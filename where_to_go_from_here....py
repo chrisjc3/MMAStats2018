@@ -209,6 +209,10 @@ name1 = "Tyron Woodley"
 
 
 
+
+
+
+
 html = getNamedFighterHTML(name1)
 VIT_data = getVITStatsfromHTML(html, name1)
 OV_data = getOVStatsfromHTML(html, name1)
@@ -218,6 +222,57 @@ PF_data = getPFStatsfromHTML(html, name1)
 
 ChartAvg = getChartAverage(html, name1)
 print(str(ChartAvg))
+
+####ALL weights maximum = 1 to keep them relative
+
+
+#if height < arm length in cm them small weight
+#if leg reach > 46% of height then small weight
+# 1" = 2.54 cm
+
+
+#strike def % - strike perc % == % of outlanding (hopefully)
+
+#takedowns x .1
+#sweeps x .1
+#passes x .1
+
+
+#average last 3 of previous fight stats
+    #->would love to rank the oppenents for a weight...would = lot of hits unless I started keeping a repo
+
+#average pts of result
+
+
+
+##Significant Strikes
+##+0.5 Pts
+##
+##Advance
+##+3 Pts
+##
+##Takedown
+##+5 Pts
+##
+##Reversal/Sweep
+##+5 Pts
+##
+##Knockdown
+##+10 Pts
+
+##1st Round Win
+##+90 Pts
+##2nd Round Win
+##+70 Pts
+##3rd Round Win
+##+45 Pts
+##4th Round Win
+##+40 Pts
+##5th Round Win
+##+40 Pts
+##Decision Win
+##+30 Pts
+
 
 
 ##    OV_data = OV_data[['TotalStrikes','SuccStrikes','SuccStrikePerc','StrikingDefensePerc',
