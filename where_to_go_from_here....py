@@ -1,3 +1,4 @@
+from __future__ import division, unicode_literals 
 from requests import get
 from requests.exceptions import RequestException
 from contextlib import closing
@@ -10,6 +11,7 @@ import datetime
 import time
 from datetime import date, datetime, time, timedelta
 import xlsxwriter
+import codecs
 
 def simple_get(url):
     try:
@@ -36,10 +38,17 @@ def getNamedFighterHTML(name):
         g = re.search(r'(.+)\s(.+)',str(name))
         url = "http://www.ufc.com/fighter/" + str(g.group(1)) + "-" + str(g.group(2))
         raw_html = simple_get(url)
+        with open (name + '.html', 'a') as f:
+            f.write(str(raw_html))
         html = BeautifulSoup(raw_html, 'html.parser')
         return(html)
     except:
         print("Doesn't seem like they exist")
+
+def readPreviousHTML(name):
+    f=codecs.open(name + ".html", 'r', 'utf-8')
+    html = BeautifulSoup(f.read(), 'html.parser')
+    return(html)
 
 def getPFStatsfromHTML(url, name):
     name_data = pd.DataFrame(columns=['names'])
@@ -202,29 +211,32 @@ def PrintFighterTable(name, VIT_data, OV_data, PF_data):
 
 
 
-
-
-
 name1 = "Tyron Woodley"
+#html = getNamedFighterHTML(name1) #<---saves to html now
+html = readPreviousHTML(name1)  #<---can load html from previous runs...reduces hits,
+                                #produces same data (slight exception for RESULT, can regex)
 
-
-
-
-
-
-
-html = getNamedFighterHTML(name1)
 VIT_data = getVITStatsfromHTML(html, name1)
 OV_data = getOVStatsfromHTML(html, name1)
 PF_data = getPFStatsfromHTML(html, name1)
-##PrintFighterTable(name, VIT_data, OV_data, PF_data)
-
+PrintFighterTable(name1, VIT_data, OV_data, PF_data)
 
 ChartAvg = getChartAverage(html, name1)
 print(str(ChartAvg))
 
-####ALL weights maximum = 1 to keep them relative
 
+
+
+
+
+
+
+def weightFighter(name, vit, ov, pf):
+    return
+
+
+
+####ALL weights maximum = 1 to keep them relative   
 
 #if height < arm length in cm them small weight
 #if leg reach > 46% of height then small weight
