@@ -132,11 +132,6 @@ def getPFStatsfromHTML(url, name):
     data = data[data.WinLoss.str.contains("UP") == False]
     return(data)
 
-
-
-
-
-
 def getArmWt(vit):
     g = re.search(r'(\d{2,})\scm',str(vit['Height']))
     heightcm = str(g.group(1))
@@ -156,15 +151,36 @@ def getLegWt(vit):
     LegWt = ((float(legcm) - float(relativeHCM))/factor1)*0.01
     return(LegWt)
 
-
+def getPFResultWts(name,pf,how_many):
+    pf = pf[pf.Name.str.contains(name) == True]
+    npf = pf[0:how_many]
+    resultWt = 0
+    for i, v in npf.iterrows():
+        if str(v['WinLoss']) == "Win":
+            try:
+                g = re.search(r'.+[R](\d).+(KO.+|Submiss.+)',str(v['Result']))
+                rnd = int(g.group(1))
+                if rnd == 1: resultWt += .5
+                if rnd == 2: resultWt += .4
+                if rnd == 3: resultWt += .3
+                if rnd == 4: resultWt += .2
+                if rnd == 5: resultWt += .1
+            except: pass
+            try:
+                g = re.search(r'.+(Decision).+',str(v['Result']))
+                if g.group(1) != None:
+                    resultWt += .05
+            except: pass
+        else:
+            resultWt += -0.2
+    return(resultWt)
 
     
 def weightFighter(name, vit, pf):
-####ALL weights maximum = 1 to keep them relative   
-
+    #all weights attempted to normalize around 1
     ArmWt = getArmWt(vit)
     LegWt = getLegWt(vit)
-
+    ResultWt = getPFResultWts(name,pf,5)
 
 
 
@@ -186,15 +202,7 @@ VIT_data = getVITStatsfromHTML(html, name1)
 PF_data = getPFStatsfromHTML(html, name1)
 ##PrintFighterTable(name1, VIT_data, PF_data)
 
-
-
-
-
-
-
-
-
-
+    
 data = weightFighter(name1,VIT_data,PF_data)
 
 #print(str(data))
