@@ -49,6 +49,39 @@ def readPreviousHTML(name):
     with open(name + ".html", 'rb') as f:
         html = BeautifulSoup(f.read(), 'html.parser')
     return(html)
+
+
+def getOrHandleHTML(name, force):
+    if force == True:
+        try:
+            print("Trying to get a hit for fighter -- Forced")
+            g = re.search(r'(.+)\s(.+)',str(name))
+            url = "http://www.ufc.com/fighter/" + str(g.group(1)) + "-" + str(g.group(2))
+            raw_html = simple_get(url)
+            with open (name + '.html', 'a') as f:
+                f.write(str(raw_html))
+            html = BeautifulSoup(raw_html, 'html.parser')
+            return(html)
+        except: print("Something went wrong with the request.")
+    else:
+        try:
+            print("Checking locally for fighter data...")
+            with open(name + ".html", 'rb') as f:
+                html = BeautifulSoup(f.read(), 'html.parser')
+            return(html)
+        except:
+            try:
+                print("No data found. Trying to get a hit for fighter")
+                g = re.search(r'(.+)\s(.+)',str(name))
+                url = "http://www.ufc.com/fighter/" + str(g.group(1)) + "-" + str(g.group(2))
+                raw_html = simple_get(url)
+                with open (name + '.html', 'a') as f:
+                    f.write(str(raw_html))
+                html = BeautifulSoup(raw_html, 'html.parser')
+                return(html)
+            except: print("Something went wrong with the request.")
+
+
     
 def getVITStatsfromHTML(html, name):
     data = pd.DataFrame(columns=['Name','Record','Age','Height','Weight','Arm_Reach','Leg_Reach'])
@@ -199,85 +232,23 @@ def weightFighter(name, vit, pf, how_many):
     LegWt = getLegWt(vit)
     ResultWt = getPFResultWts(name,pf,how_many)
     TendencyWts = getPFTendencyWts(name,pf,how_many)
-
     Wts = ArmWt + LegWt + ResultWt + TendencyWts
-    
-    print(str(Wts))
-    
-    return
+    return(Wts)
 
 
 
 
-
-
-
-
-name1 = "Artem Lobov"
-#html = getNamedFighterHTML(name1) #<---saves to html now
-html = readPreviousHTML(name1)  #<---can load html from previous runs...reduces hits,
-                                #produces same data (slight exception for RESULT, can regex)
+name1 = "Daniel Cormier"
+html = getOrHandleHTML(name1,False)
 
 VIT_data = getVITStatsfromHTML(html, name1)
 PF_data = getPFStatsfromHTML(html, name1)
 ##PrintFighterTable(name1, VIT_data, PF_data)
 
     
-data = weightFighter(name1,VIT_data,PF_data, 5)
+Weights1 = weightFighter(name1,VIT_data,PF_data, 5)
+print(str(Weights1))
 
-#print(str(data))
-
-
-#takedowns x .1
-#sweeps x .1
-#passes x .1
-
-
-#would love to rank the oppenents for a weight...would = lot of hits unless I started keeping a repo
-
-#average pts of result
-
-
-
-##Significant Strikes
-##+0.5 Pts
-##
-##Advance
-##+3 Pts
-##
-##Takedown
-##+5 Pts
-##
-##Reversal/Sweep
-##+5 Pts
-##
-##Knockdown
-##+10 Pts
-
-##    OV_data = OV_data[['TotalStrikes','SuccStrikes','SuccStrikePerc','StrikingDefensePerc',
-##    'TotalTDAttempts','SuccTDs','SuccTDPerc','TDDefensePerc',
-##    'Submissions','Sweeps','Passes',
-##    'ClinchStrikesLanded','ClinchStrikePerc','GroundStrikesLanded','GroundStrikePerc','StandingStrikesLanded','StandingStrikePerc'
-##    ]]
-##
-
-#PF Data = Strikes TDs SubAtts Passes Result
-
-
-
-
-#maybe weight it out...define some kind of 'score'...would like to base off level of competition but that would need a lot of hits
-#then compare the scores of opponent...obviously...
 #eventually import draftkings salaries & put in some kind of differential & make an optimizer for lineups
 
 
-
-
-
-#http://www.ufc.com/fighter/Tyron-Woodley
-#http://www.ufc.com/fighter/Justin-Gaethje
-
-
-###how to iterate it....
-##for v in data.iterrows():
-##    print(str(v[1][0]) + " --- " + str(v[1][1]) + "\n")
