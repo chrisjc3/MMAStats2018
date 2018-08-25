@@ -13,6 +13,7 @@ from datetime import date, datetime, time, timedelta
 import xlsxwriter
 import codecs
 import itertools
+from timeit import default_timer as timer
 
 def simple_get(url):
     try:
@@ -299,26 +300,13 @@ data = data[['DKID','Salary','Weight','Fighter','Opponent']]
 
 print("Starting permutations...")
       
-combs =  list(itertools.combinations(data['DKID'], 6)) #jesus, 230k....
+combs =  list(itertools.combinations(data['DKID'], 6))
 combs = pd.DataFrame(combs)
-
-print("Starting initial Salary scan...")
-#Filter out salaries over 50k to cut down analysis time (cuts out ~50% off the bat)
-inserts=0
-salariedcombs = pd.DataFrame(combs)
-for i, v in combs.iterrows():
-    sal = 0
-    for j in v:
-        line = data[data.DKID == str(j)]
-        sal += float(line.Salary)
-    if sal <= 50000:
-        salariedcombs.iloc[inserts] = v
-        inserts += 1
-    #print(str(i) + " -- Inserted: " + str(inserts))
-print("Finished initial Salary scan...")
+print(str(len(combs)) + " Permutations found.") 
 print("Starting Info Update & Printing...") 
-#very slow....wonder if creating a new dataframe would be faster
-for i, v in salariedcombs.iterrows():
+finalcombs = pd.DataFrame(columns=[0,1,2,3,4,5,"Conflict","Salary","Weight"])
+goodOnes = 0
+for i, v in combs.iterrows():
     opList = []
     fiList = []
     sal = 0
@@ -330,20 +318,33 @@ for i, v in salariedcombs.iterrows():
         wt += float(line.Weight)
         opList.append(str(line.Opponent))
         fiList.append(str(line.Fighter))
-        if len(fiList)>0 and len(opList)>0:
-            #if any(s in str(fiList) for s in str(opList)):
-            if not set(fiList).isdisjoint(opList):
-                conflict = 1
-    salariedcombs.loc[i,'Conflict'] = str(conflict)
-    salariedcombs.loc[i,'Salary'] = str(sal)
-    salariedcombs.loc[i,'Weight'] = str(wt)
-    #print(str(combs.iloc[i]))
+        if len(fiList)>0 and len(opList)>0 and conflict == 0:
+            for pp in fiList:
+                g = re.search(r'\d+\s+(.+)',str(pp))
+                f1 = str(g.group(1))
+                for px in opList:
+                    g = re.search(r'\d+\s+(.+)',str(px))
+                    f2 = str(g.group(1))
+                    if f1 == f2:
+                        conflict = 1
+    if(int(conflict) == 0 and float(sal)<=50000):
+        finalcombs.loc[goodOnes,0] = v[0]
+        finalcombs.loc[goodOnes,1] = v[1]
+        finalcombs.loc[goodOnes,2] = v[2]
+        finalcombs.loc[goodOnes,3] = v[3]
+        finalcombs.loc[goodOnes,4] = v[4]
+        finalcombs.loc[goodOnes,5] = v[5]
+        finalcombs.loc[goodOnes,'Conflict'] = int(conflict)
+        finalcombs.loc[goodOnes,'Salary'] = float(sal)
+        finalcombs.loc[goodOnes,'Weight'] = float(wt)
+        goodOnes += 1
+    print("Good ones found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
 print("Finished Info Update & Printing...")
 
 dt = date.today()
 dt = dt.strftime("%d%b%Y")
 writer = pd.ExcelWriter('Report_' + dt + '.xlsx')
-salariedcombs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+finalcombs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
 writer.save()
 
 
