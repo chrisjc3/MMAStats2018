@@ -175,15 +175,35 @@ def getPFResultWts(name,pf,how_many):
             resultWt += -0.2
     return(resultWt)
 
+def getPFTendencyWts(name,pf,how_many):
+    pf = pf[pf.Name.str.contains(name) == True]
+    npf = pf[0:how_many]
+    strkWt = 0
+    tdWt = 0
+    tendWt = 0
+    strikes = 0
+    tds = 0
+    for i, v in npf.iterrows():
+        strikes += int(v['Strikes'])
+        tds += int(v['TDs'])
+        
+    strkWt = (strikes*.5)*.01
+    tdWt = (tds*5)*.01
+    tendWt = strkWt+tdWt
+    return(tendWt)
+
     
-def weightFighter(name, vit, pf):
+def weightFighter(name, vit, pf, how_many):
     #all weights attempted to normalize around 1
     ArmWt = getArmWt(vit)
     LegWt = getLegWt(vit)
-    ResultWt = getPFResultWts(name,pf,5)
+    ResultWt = getPFResultWts(name,pf,how_many)
+    TendencyWts = getPFTendencyWts(name,pf,how_many)
 
-
-
+    Wts = ArmWt + LegWt + ResultWt + TendencyWts
+    
+    print(str(Wts))
+    
     return
 
 
@@ -193,7 +213,7 @@ def weightFighter(name, vit, pf):
 
 
 
-name1 = "James Vick"
+name1 = "Artem Lobov"
 #html = getNamedFighterHTML(name1) #<---saves to html now
 html = readPreviousHTML(name1)  #<---can load html from previous runs...reduces hits,
                                 #produces same data (slight exception for RESULT, can regex)
@@ -203,7 +223,7 @@ PF_data = getPFStatsfromHTML(html, name1)
 ##PrintFighterTable(name1, VIT_data, PF_data)
 
     
-data = weightFighter(name1,VIT_data,PF_data)
+data = weightFighter(name1,VIT_data,PF_data, 5)
 
 #print(str(data))
 
@@ -213,8 +233,7 @@ data = weightFighter(name1,VIT_data,PF_data)
 #passes x .1
 
 
-#average last 3 of previous fight stats
-    #->would love to rank the oppenents for a weight...would = lot of hits unless I started keeping a repo
+#would love to rank the oppenents for a weight...would = lot of hits unless I started keeping a repo
 
 #average pts of result
 
@@ -235,21 +254,6 @@ data = weightFighter(name1,VIT_data,PF_data)
 ##Knockdown
 ##+10 Pts
 
-##1st Round Win
-##+90 Pts
-##2nd Round Win
-##+70 Pts
-##3rd Round Win
-##+45 Pts
-##4th Round Win
-##+40 Pts
-##5th Round Win
-##+40 Pts
-##Decision Win
-##+30 Pts
-
-
-
 ##    OV_data = OV_data[['TotalStrikes','SuccStrikes','SuccStrikePerc','StrikingDefensePerc',
 ##    'TotalTDAttempts','SuccTDs','SuccTDPerc','TDDefensePerc',
 ##    'Submissions','Sweeps','Passes',
@@ -264,7 +268,7 @@ data = weightFighter(name1,VIT_data,PF_data)
 
 #maybe weight it out...define some kind of 'score'...would like to base off level of competition but that would need a lot of hits
 #then compare the scores of opponent...obviously...
-#eventually import draftkings salaries & put in some kind of differential 
+#eventually import draftkings salaries & put in some kind of differential & make an optimizer for lineups
 
 
 
