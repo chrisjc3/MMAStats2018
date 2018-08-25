@@ -189,7 +189,7 @@ def getPFResultWts(name,pf,how_many):
     npf = pf[0:how_many]
     resultWt = 0
     for i, v in npf.iterrows():
-        if str(v['WinLoss']) == "Win":
+        if str(v['WinLoss']) == "Win" or str(v['WinLoss']) == "":
             try:
                 g = re.search(r'.+[R](\d).+(KO.+|Submiss.+)',str(v['Result']))
                 rnd = int(g.group(1))
@@ -250,5 +250,10 @@ Weights1 = weightFighter(name1,VIT_data,PF_data, 5)
 print(str(Weights1))
 
 #eventually import draftkings salaries & put in some kind of differential & make an optimizer for lineups
+
+#build an application with fight card slots to type in names...
+#checkbox for force find/update
+#type salaries to avoid naming conflicts...
+#show weights side by side
 
 
