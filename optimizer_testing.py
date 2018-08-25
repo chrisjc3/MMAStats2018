@@ -12,7 +12,7 @@ import time
 from datetime import date, datetime, time, timedelta
 import xlsxwriter
 import codecs
-
+import itertools
 
 
 
@@ -34,12 +34,38 @@ for i, v in data.iterrows():
         data.loc[i,'Fighter'] = nm2
         data.loc[i,'Opponent'] = nm1
     data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
-
     
 data = data[['DKID','Salary','AvgPointsPerGame','Fighter','Opponent']]
 data = data.rename(index=str, columns={"AvgPointsPerGame": "Weight"})
 
-print(str(data))
+combs =  list(itertools.combinations(data['DKID'], 6))
+combs = pd.DataFrame(combs)
+
+for i, v in combs.iterrows():
+    opList = []
+    fiList = []
+    sal = 0
+    wt = 0
+    conflict = 0
+    for j in v:
+        line = data[data.DKID == str(j)]
+        sal += float(line.Salary)
+        wt += float(line.Weight)
+        opList.append(str(line.Opponent))
+        fiList.append(str(line.Fighter))
+        if len(fiList)>0 and len(opList)>0:
+            #if any(s in str(fiList) for s in str(opList)):
+            if not set(fiList).isdisjoint(opList):
+                conflict = 1
+    combs.loc[i,'Conflict'] = str(conflict)
+    combs.loc[i,'Salary'] = str(sal)
+    combs.loc[i,'Weight'] = str(wt)
+    print(str(combs.iloc[i]))
+
+
+writer = pd.ExcelWriter('Report' + '.xlsx')
+combs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+writer.save()
 
 
 
@@ -58,9 +84,3 @@ print(str(data))
 
 
 
-
-
-
-
-
-#cap is 50k
