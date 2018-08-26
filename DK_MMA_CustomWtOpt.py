@@ -208,16 +208,21 @@ def getPFResultWts(name,pf,how_many):
             try:
                 g = re.search(r'.+[R](\d).+(KO.+|Submiss.+)',str(v['Result']))
                 rnd = int(g.group(1))
-                if rnd == 1: resultWt += .5
-                if rnd == 2: resultWt += .4
-                if rnd == 3: resultWt += .3
+##                if rnd == 1: resultWt += .5
+##                if rnd == 2: resultWt += .4
+##                if rnd == 3: resultWt += .3
+##                if rnd == 4: resultWt += .2
+##                if rnd == 5: resultWt += .1
+                if rnd == 1: resultWt += 2
+                if rnd == 2: resultWt += 1.5
+                if rnd == 3: resultWt += .5
                 if rnd == 4: resultWt += .2
                 if rnd == 5: resultWt += .1
             except: pass
             try:
                 g = re.search(r'.+(Decision).+',str(v['Result']))
                 if g.group(1) != None:
-                    resultWt += .05
+                    resultWt += .1
             except: pass
         else:
             resultWt += -0.2
@@ -331,6 +336,11 @@ print("Starting permutations...")
 #https://github.com/sidhenriksen/mma-prediction
 #adopt this approach....see if it still works tomorrow....
 
+
+#maybe pose side by sides for checkbox picked....or function entry...
+
+
+#At least need "MUST INCLUDES"...cause i fucking know...
 
 combs =  list(itertools.combinations(data['DKID'], 6))
 combs = pd.DataFrame(combs)
