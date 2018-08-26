@@ -268,7 +268,7 @@ def weightFighter(name, vit, pf, how_many):
 #Check that how_many/PF is working correctly....
 #output a map with the weights onto the DF.csv as well, raw...
 #look at the output against tonights' results
-
+#Weight of competition would really be killer...
 
 
 
@@ -308,6 +308,7 @@ for i, v in data.iterrows():
     name = str(g.group(1))
     print(str(name))
     html = getOrHandleHTML(name,False)
+##    html = getOrHandleHTML(name,False) #True for force...
     VIT_data = getVITStatsfromHTML(html, name)
     PF_data = getPFStatsfromHTML(html, name)
     Weight = weightFighter(name,VIT_data,PF_data, 5)
@@ -316,6 +317,16 @@ for i, v in data.iterrows():
 data = data[['DKID','Salary','Weight','Fighter','Opponent']]
 
 print("Starting permutations...")
+
+
+
+###NEED TO PROGRAM SOME KIND OF VARIANCE FACTOR INTO THIS (at least 2 different fighters..)
+
+
+#maybe app to list the dk entries, checkboxes for favorites...base around that...
+    #logic would be a wreck though
+
+
 
 
 combs =  list(itertools.combinations(data['DKID'], 6))
