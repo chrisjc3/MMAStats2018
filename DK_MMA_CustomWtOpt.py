@@ -265,7 +265,7 @@ def weightFighter(name, vit, pf, how_many):
 
 
 #Weights could use some work...make sure it's all adding up right too....
-#Check that how_many/PF is working correctly....
+#Check that how_many/PF is working correctly....maybe just use 2-3 fights
 #output a map with the weights onto the DF.csv as well, raw...
 #look at the output against tonights' results
 #Weight of competition would really be killer...
@@ -311,7 +311,7 @@ for i, v in data.iterrows():
 ##    html = getOrHandleHTML(name,False) #True for force...
     VIT_data = getVITStatsfromHTML(html, name)
     PF_data = getPFStatsfromHTML(html, name)
-    Weight = weightFighter(name,VIT_data,PF_data, 5)
+    Weight = weightFighter(name,VIT_data,PF_data, 2) ###maybe too many PF, skewing
     data.loc[i,'Weight'] = Weight
 
 data = data[['DKID','Salary','Weight','Fighter','Opponent']]
@@ -327,6 +327,9 @@ print("Starting permutations...")
     #logic would be a wreck though
 
 
+#wtf fightmetric has an API???
+#https://github.com/sidhenriksen/mma-prediction
+#adopt this approach....see if it still works tomorrow....
 
 
 combs =  list(itertools.combinations(data['DKID'], 6))
@@ -369,6 +372,8 @@ for i, v in combs.iterrows():
         goodOnes += 1
     print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
 print("Finished Info Update & Printing...")
+
+#throw in a sort by weight/sal
 
 dt = date.today()
 dt = dt.strftime("%d%b%Y")
