@@ -167,6 +167,19 @@ def getPFStatsfromHTML(url, name):
     data = data[data.WinLoss.str.contains("UP") == False]
     return(data)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 def getArmWt(vit):
     g = re.search(r'(\d{2,})\scm',str(vit['Height']))
     heightcm = str(g.group(1))
@@ -251,6 +264,10 @@ def weightFighter(name, vit, pf, how_many):
 
 
 
+#Weights could use some work...make sure it's all adding up right too....
+#Check that how_many/PF is working correctly....
+#output a map with the weights onto the DF.csv as well, raw...
+#look at the output against tonights' results
 
 
 
@@ -299,7 +316,8 @@ for i, v in data.iterrows():
 data = data[['DKID','Salary','Weight','Fighter','Opponent']]
 
 print("Starting permutations...")
-      
+
+
 combs =  list(itertools.combinations(data['DKID'], 6))
 combs = pd.DataFrame(combs)
 print(str(len(combs)) + " Permutations found.") 
@@ -338,7 +356,7 @@ for i, v in combs.iterrows():
         finalcombs.loc[goodOnes,'Salary'] = float(sal)
         finalcombs.loc[goodOnes,'Weight'] = float(wt)
         goodOnes += 1
-    print("Good ones found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
+    print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
 print("Finished Info Update & Printing...")
 
 dt = date.today()
