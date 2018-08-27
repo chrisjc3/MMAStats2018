@@ -8,13 +8,15 @@ from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
 import re
+import numpy as np
+from decimal import *
 
 pd.set_option('display.max_colwidth', -1)
 ##pd.set_option('display.max_rows', -1)
 
 config = {
     'use_own_ip': True,
-    'keyword': ' "Saas" rds.fightmetric.com',
+    'keyword': '',
     'search_engines': ['google'],
     'num_pages_for_keyword': 1,
     'scrape_method': 'http',
@@ -29,9 +31,9 @@ def readinJsonSearch(name):
     return(data)
 
 def insertNametoConfig_Search(name, config):
-    config['keyword'] = name + config['keyword']
+    config['keyword'] = name + ' "Saas" rds.fightmetric.com'
     config['output_filename'] = name + ".json"
-    #print("PRINTING WITH PHRASE: " + config['keyword'])
+    print("PRINTING WITH PHRASE: " + config['keyword'])
     try:
         search = scrape_with_config(config)
         data = readinJsonSearch(name)
@@ -81,17 +83,20 @@ def is_good_response(resp):
 def log_error(e):
     print(e)
 
+
+
 def getRDSsite(name, url):
     raw_html = simple_get(url)
     with open (name + '.html', 'a') as f:
         f.write(str(raw_html))
-    soup = BeautifulSoup(raw_html, 'lxml')
+    print("Stored fighter data on fighter: " + name)
+    soup =readPreviousHTML(name)
     return(soup)
 
 def readPreviousHTML(name):
     with open(name + ".html", 'rb') as f:
         soup = BeautifulSoup(f.read(), 'lxml')
-    print("Located data on fighter: " + name)
+    print("Importing stored data on fighter: " + name)
     return(soup)
 
 def getHTML(name,url,force=False):
@@ -105,6 +110,9 @@ def getHTML(name,url,force=False):
             print("Data not found, performing hit on fighter: " + name)
             soup = getRDSsite(name, url)
     return(soup)
+
+
+
 
 def getRDSVitalstats(name,soup):
     data = pd.DataFrame()
@@ -131,7 +139,6 @@ def getRDSVitalstats(name,soup):
     n1 = int(g.group(1))
     data['ReachCM'] = (n1*2.54)
     data = data[['Height','HeightCM','Reach','ReachCM','Age','Stance']]
-    
     return data
 
 def getRDSTablestats(name,soup):
@@ -214,47 +221,104 @@ def getRDSTablestats(name,soup):
     data = data[0:correctRange]
     data = data.rename(index=str, columns={0: "Strike",1: "TakeDowns",2: "SubAtts",3: "GPasses"})
     data = data[['Name','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
-    
+##    print(data)
     return(data)
 
 
-def getReachWt(data):
-    factor1 = float(data['HeightCM'])*.02
-    ArmWt = ((float(data['ReachCM']) - float(data['HeightCM']))/factor1)*0.1
-    return(ArmWt)
+def getReachWt(vit):
+    factor1 = float(vit['HeightCM'])*.02
+    ArmWt = ((float(vit['ReachCM']) - float(vit['HeightCM']))/factor1)*0.1
+    return(round(ArmWt,3))
 
+def getEndMethodWt(name,pf,howMany):
+    pf = pf[pf.Name.str.contains(name) == True]
+    pf = pf[pf.WinLoss.str.contains("NEXT") == False]
+    pf = pf[pf.WinLoss.str.contains("SD") == False]
+    npf = pf[0:howMany]
+    resultWt = 0
+    for i, v in npf.iterrows():
+        if str(v['WinLoss']) == "W":
+            try:
+                g = re.search(r'(KO.+|Submiss.+)',str(v['EndMethod']))
+                if g.group(1) != None:
+                    if int(v['Round']) == 1: resultWt= Decimal(resultWt) + Decimal(2.0)
+                    if int(v['Round']) == 2: resultWt= Decimal(resultWt) + Decimal(1.5)
+                    if int(v['Round']) == 3: resultWt= Decimal(resultWt) + Decimal(.5)
+                    if int(v['Round']) == 4: resultWt= Decimal(resultWt) + Decimal(.2)
+                    if int(v['Round']) == 5: resultWt= Decimal(resultWt) + Decimal(.1)
+            except:
+                resultWt= Decimal(resultWt) + Decimal(.1) 
+        else:
+            resultWt= Decimal(resultWt) - Decimal(.3)
+    return(round(resultWt,3))
 
+def getTendencyWts(name,pf,howMany):
+    pf = pf[pf.Name.str.contains(name) == True]
+    pf = pf[pf.WinLoss.str.contains("NEXT") == False]
+    npf = pf[0:howMany]
 
-
-def defineWeights(vit,pf):
+    stkWt = Decimal(sum(npf['Strike']))*Decimal(0.005)
+    tdWt = Decimal(sum(npf['TakeDowns']))*Decimal(0.02)
+    subWt = Decimal(sum(npf['SubAtts']))*Decimal(0.0025)
+    passWt = Decimal(sum(npf['GPasses']))*Decimal(0.01)
+    TendencyWt = Decimal(stkWt)+Decimal(tdWt)+Decimal(subWt)+Decimal(passWt)
+    return(round(TendencyWt,3))
+    
+def defineWeights(name,vit,pf):
     reachWt = getReachWt(vit)
-    print(str(reachWt))
-    return
+    EndMethodWt = getEndMethodWt(name, pf, 3)   #how_many previous fights to look at 
+    TendencyWt = getTendencyWts(name, pf, 3)   #how_many previous fights to look at 
+    Weight = Decimal(reachWt) + Decimal(EndMethodWt) + Decimal(TendencyWt)
+    return(round(Weight,3))
+
+def getFighter(name,config):
+    data = URLFetch(name, config, False)
+    soup = getHTML(name,data['url'], False)
+    tabledata = getRDSTablestats(name,soup)
+    vitaldata = getRDSVitalstats(name,soup)
+    Weight = defineWeights(name,vitaldata,tabledata)
+    return(Weight) 
 
 
-
+########################FOR INDIVIDUAL TESTING PURPOSES######################
 ##name = "Jon Jones"
-name = "Artem Lobov"
-data = URLFetch(name, config, False)
-soup = getHTML(name,data['url'], False)
-
-##print(soup.prettify())
-
-tabledata = getRDSTablestats(name,soup)
-vitaldata = getRDSVitalstats(name,soup)
+##name = "Artem Lobov"
+##name = "Cory Sandhagen "
+##Weight = getFighter(name,config)
+########################FOR INDIVIDUAL TESTING PURPOSES######################
 
 
-data = defineWeights(vitaldata,tabledata)
+
+####well shit...RDS doesn't come up for Eryk Anders
 
 
-##vitals_factor
-##prevfights_factor
 
+data = pd.read_csv('DKSalaries.csv')
+data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
+data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
+for i, v in data.iterrows():
+    g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
+    nm1 = str(g.group(1))
+    nm2 = str(g.group(2))
+    if nm1 == v['TeamAbbrev']:
+        data.loc[i,'Fighter'] = nm1
+        data.loc[i,'Opponent'] = nm2
+    else:
+        data.loc[i,'Fighter'] = nm2
+        data.loc[i,'Opponent'] = nm1
+    data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
 
+for i, v in data.iterrows():
+    g = re.search(r'(.+)(\(.+)',str(v['DKID']))
+    name = str(g.group(1))
+    print(str(name))
+    Weight = getFighter(name,config)
+    data.loc[i,'Weight'] = Weight
+
+data = data[['DKID','Salary','Weight','Fighter','Opponent']]
 
 writer = pd.ExcelWriter(name + '_Report.xlsx')
-vitaldata.to_excel(writer,sheet_name=name,startrow=0, startcol=0, index=False)
-tabledata.to_excel(writer,sheet_name=name,startrow=3, startcol=0, index=False)
+data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
 writer.save()
 
 
