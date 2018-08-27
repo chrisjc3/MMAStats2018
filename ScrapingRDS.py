@@ -40,6 +40,9 @@ def getRDSsite(name, search_term):
     for div in soup.findAll("span", {"class": "url"}):
         if "fightmetric.rds" in div.contents[0] and "fighter" in div.contents[0]:
             url = str(div.contents[0])
+            print(url)
+            break
+            
     raw_html = simple_get(url)
     with open (name + '.html', 'a') as f:
         f.write(str(raw_html))
@@ -142,10 +145,13 @@ def getRDSstats(name,soup):
 #print(soup.prettify())
 
 
+name = "Jon Jones"  #lol wtf, chael sonnen....gotta look closer in JJ, think it's something with the belt.
+#missing round info and method...+ says he won against DC (no content, reversed)
 
-name = "Cory Sandhagen"
+
+##name = "Cory Sandhagen"
 ##name = "Michael Johnson"
-soup = getHTML(name,False)
+soup = getHTML(name,True)
 data = getRDSstats(name,soup)
 #woot, works on both .ca and .com
 print(str(data))
@@ -154,11 +160,3 @@ print(str(data))
 
 
 
-
-
-
-
-
-
-##for div in soup.findAll("div", {"class": "external-link"}):
-##    print(div.contents[0])
