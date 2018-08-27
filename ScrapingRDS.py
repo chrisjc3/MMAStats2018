@@ -75,6 +75,9 @@ def getRDSstats(name,soup):
 
     ###I BELIEVE THE HREF IN THE NAMES HAS OPPONENT LINK...POSSIBILITY TO COMPILE ALL OPPONENTS...
     #RDS is weird with .com .ca for fighters though...seems random
+
+    #maybe throw together a list of opponent URLs
+    
     data = pd.DataFrame()
     i = 0
     for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
@@ -145,13 +148,15 @@ def getRDSstats(name,soup):
 #soup = readPreviousHTML(name)
 
 
+name = "Khabib Nurmagomedov"  #WHY THE FUCK WOULD GLEISON SHOW UP FOR KHABIB
+#yea...this search engine ain't working 100% either...fucking google and their bot hate.
 
-name = "Jon Jones"  
+##name = "Jon Jones"  
 ##name = "Cory Sandhagen"
 ##name = "Michael Johnson"
 soup = getHTML(name,False)
 
-print(soup.prettify())
+#print(soup.prettify())
 
 data = getRDSstats(name,soup)
 #woot, works on both .ca and .com
