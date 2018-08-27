@@ -176,7 +176,7 @@ def getRDSTablestats(name,soup):
     data = data[['Name','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
     data[['Strike','TakeDowns','SubAtts','GPasses','Round']] = data[['Strike','TakeDowns','SubAtts','GPasses','Round']].apply(pd.to_numeric)
     
-    print(data)
+##    print(data)
     return(data)
 
 def getRDSVitalstats(name,soup):
@@ -224,7 +224,7 @@ def getRDSVitalstats(name,soup):
         n1 = int(g.group(1))
         data['ReachCM'] = (n1*2.54)
     except: data['ReachCM'] = 0
-    print(data)
+##    print(data)
 
     return data
 
@@ -243,7 +243,7 @@ def getReachWt(vit):
     else: return(0)
 
 def getEndMethodWt(name,pf,howMany):
-    pf = pf[pf.Name.str.contains(name) == True]
+    pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
     pf = pf[pf.WinLoss.str.contains("nc") == False]
     npf = pf[0:howMany]
@@ -265,7 +265,7 @@ def getEndMethodWt(name,pf,howMany):
     return(round(resultWt,3))
 
 def getTendencyWts(name,pf,howMany):
-    pf = pf[pf.Name.str.contains(name) == True]
+    pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
     npf = pf[0:howMany]
 
@@ -278,11 +278,11 @@ def getTendencyWts(name,pf,howMany):
     
 def defineWeights(name,vit,pf):
     reachWt = getReachWt(vit)
-    print("Reach Wt: " + str(reachWt))
+##    print("Reach Wt: " + str(reachWt))
     EndMethodWt = getEndMethodWt(name, pf, 3)   #how_many previous fights to look at
-    print("End Method Wt: " + str(EndMethodWt))
+##    print("End Method Wt: " + str(EndMethodWt))
     TendencyWt = getTendencyWts(name, pf, 3)   #how_many previous fights to look at
-    print("Tendency Wt: " + str(TendencyWt))
+##    print("Tendency Wt: " + str(TendencyWt))
     Weight = Decimal(reachWt) + Decimal(EndMethodWt) + Decimal(TendencyWt)
     return(round(Weight,3))
 
@@ -293,49 +293,53 @@ def getFighter(name,config):
     vitaldata = getRDSVitalstats(name,soup)
     tabledata = getRDSTablestats(name,soup)
     Weight = defineWeights(name,vitaldata,tabledata)
-    print(str(Weight))
-    return(Weight) 
+##    print(str(Weight))
+    return(Weight, vitaldata) 
 
 
 ########################FOR INDIVIDUAL TESTING PURPOSES######################
 ##name = "Jon Jones"
 ##name = "Artem Lobov"
 ##name = "Cory Sandhagen"
-name = "Kalindra Faria "
-Weight = getFighter(name,config)
+##name = "Kalindra Faria "
+##Weight = getFighter(name,config)
 ########################FOR INDIVIDUAL TESTING PURPOSES######################
 
 
-##data = pd.read_csv('DKSalaries.csv')
-##data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
-##data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
-##for i, v in data.iterrows():
-##    g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
-##    nm1 = str(g.group(1))
-##    nm2 = str(g.group(2))
-##    if nm1 == v['TeamAbbrev']:
-##        data.loc[i,'Fighter'] = nm1
-##        data.loc[i,'Opponent'] = nm2
-##    else:
-##        data.loc[i,'Fighter'] = nm2
-##        data.loc[i,'Opponent'] = nm1
-##    data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
-##
-##for i, v in data.iterrows():
-##    g = re.search(r'(.+)(\(.+)',str(v['DKID']))
-##    name = str(g.group(1))
-##    print(str(name))
-##    Weight = getFighter(name,config)
-##    data.loc[i,'Weight'] = Weight
-##
-##data = data[['DKID','Salary','Weight','Fighter','Opponent']]
+data = pd.read_csv('DKSalaries.csv')
+data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
+data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
+for i, v in data.iterrows():
+    g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
+    nm1 = str(g.group(1))
+    nm2 = str(g.group(2))
+    if nm1 == v['TeamAbbrev']:
+        data.loc[i,'Fighter'] = nm1
+        data.loc[i,'Opponent'] = nm2
+    else:
+        data.loc[i,'Fighter'] = nm2
+        data.loc[i,'Opponent'] = nm1
+    data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
+
+compiledVitals = pd.DataFrame()
+
+for i, v in data.iterrows():
+    g = re.search(r'(.+)(\(.+)',str(v['DKID']))
+    name = str(g.group(1))
+    Weight, vitaldata = getFighter(name,config)
+    data.loc[i,'Weight'] = float(Weight)
+    compiledVitals = compiledVitals.append(vitaldata, ignore_index=True)
 
 
-##dt = date.today()
-##dt = dt.strftime("%d%b%Y")
-##writer = pd.ExcelWriter('DKReport_' + dt + '.xlsx')
-##data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
-##writer.save()
+data = data[['DKID','Salary','Weight','Fighter','Opponent']]
+frames = [data, compiledVitals]
+data = pd.concat(frames, axis=1, sort=False)
+
+dt = date.today()
+dt = dt.strftime("%d%b%Y")
+writer = pd.ExcelWriter('DKReport_' + dt + '.xlsx')
+data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+writer.save()
 
 
 
