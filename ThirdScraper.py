@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import re
 
 pd.set_option('display.max_colwidth', -1)
-pd.set_option('display.max_rows', -1)
+##pd.set_option('display.max_rows', -1)
 
 config = {
     'use_own_ip': True,
@@ -106,30 +106,30 @@ def getHTML(name,url,force=False):
             soup = getRDSsite(name, url)
     return(soup)
 
-def getRDSstats(name,soup):
+def getRDSTablestats(name,soup):
 
     ###I BELIEVE THE HREF IN THE NAMES HAS OPPONENT LINK...POSSIBILITY TO COMPILE ALL OPPONENTS...
-    #RDS is weird with .com .ca for fighters though...seems random
 
-    #maybe throw together a list of opponent URLs
-    
     data = pd.DataFrame()
     i = 0
-    for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
-        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","").replace("\n","")
-        i+=1
-    correctRange = len(data)
     
+    for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
+        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","").replace("\n","").replace("\\","")
+        i+=1
+
+    correctRange = len(data)
+
     regex = re.compile('.*b\-table\_\_col*')
     
     i = 0
     for div in soup.findAll("td", {"class" : regex}):
         try:
             if not ":" in div.contents[0] and re.match(r'\d+', div.contents[0].replace("  ","").replace("\\n","")):
-                data.loc[i,'Round'] = div.contents[0].replace("  ","").replace("\\n","")
-                data.loc[i+1,'Round'] = div.contents[0].replace("  ","").replace("\\n","")
+                data.loc[i,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
+                data.loc[i+1,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
                 i+=2
         except: pass
+    
     i=0
     for div in soup.findAll("td", {"class" : regex}):
         try:
@@ -139,10 +139,11 @@ def getRDSstats(name,soup):
                 data.loc[i+1,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 i+=2
         except: pass
+    
     i=0
     for div in soup.findAll("td", {"class" : regex}):
         try:
-            if re.match(r'(KO.+|.+Dec.+|Sub.+|Overt.+)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
+            if re.match(r'(KO.+|.+Dec.+|Sub.+|Overt.+|DQ)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
                 data.loc[i,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 data.loc[i+1,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 i+=2
@@ -152,7 +153,7 @@ def getRDSstats(name,soup):
     i = 0
     j = 0
     for div in soup.findAll("div", {"class" : divre1}):
-        data.loc[i,j] = div.contents[0]
+        data.loc[i,j] = int(div.contents[0])
         j+=1
         if j==4:
             j=0
@@ -162,7 +163,7 @@ def getRDSstats(name,soup):
     i = 1
     j = 0
     for div in soup.findAll("div", {"class" : divre2}):
-        data.loc[i,j] = div.contents[0]
+        data.loc[i,j] = int(div.contents[0])
         j+=1
         if j==4:
             j=0
@@ -170,8 +171,38 @@ def getRDSstats(name,soup):
 
     data = data[0:correctRange]
     data = data.rename(index=str, columns={0: "Strike",1: "TakeDowns",2: "SubAtts",3: "GPasses"})
+    data = data[['Name','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
+    
     return(data)
 
+
+def getRDSVitalstats(name,soup):
+    data = pd.DataFrame()
+    i = 0
+    regex = re.compile('b\-box\_\_value')
+    for div in soup.findAll("i", {"class" : regex}):
+        try:
+             if i == 0: pass
+             if i == 1: data.loc[0, i] = div.contents[0].replace("  ","").replace("\\n","").replace("\\","")
+             if i == 2: data.loc[0, i] = div.contents[0].replace("  ","").replace("\\n","").replace("\\","")
+             if i == 3: data.loc[0, i] = int(div.contents[0].replace("  ","").replace("\\n","").replace("\\",""))
+             if i == 4: data.loc[0, i] = div.contents[0].replace("  ","").replace("\\n","").replace("\\","")
+             if i >= 5: pass
+             i+=1
+        except: pass
+    data = data.rename(index=str, columns={1: "Height",2: "Reach",3: "Age",4: "Stance"})
+
+    g = re.search(r'(\d)\'.*(\d+)\"',str(data['Height']))
+    n1 = int(g.group(1))
+    n2 = int(g.group(2))
+    data['HeightCM'] = (n1*30.48)+(n2*2.54)
+
+    g = re.search(r'(\d+)\"',str(data['Reach']))
+    n1 = int(g.group(1))
+    data['ReachCM'] = (n1*2.54)
+    data = data[['Height','HeightCM','Reach','ReachCM','Age','Stance']]
+    
+    return data
 
 
 
@@ -183,11 +214,14 @@ def getRDSstats(name,soup):
 name = "Jon Jones"
 data = URLFetch(name, config, False)
 soup = getHTML(name,data['url'], False)
-data = getRDSstats(name,soup)
-print(str(data))
+tabledata = getRDSTablestats(name,soup)
+vitaldata = getRDSVitalstats(name,soup)
 
 
-
+writer = pd.ExcelWriter('Report.xlsx')
+vitaldata.to_excel(writer,sheet_name=name,startrow=0, startcol=0, index=False)
+tabledata.to_excel(writer,sheet_name=name,startrow=3, startcol=0, index=False)
+writer.save()
 
 
 
