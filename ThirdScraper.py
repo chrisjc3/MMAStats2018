@@ -106,76 +106,6 @@ def getHTML(name,url,force=False):
             soup = getRDSsite(name, url)
     return(soup)
 
-def getRDSTablestats(name,soup):
-
-    ###I BELIEVE THE HREF IN THE NAMES HAS OPPONENT LINK...POSSIBILITY TO COMPILE ALL OPPONENTS...
-
-    data = pd.DataFrame()
-    i = 0
-    
-    for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
-        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","").replace("\n","").replace("\\","")
-        i+=1
-
-    correctRange = len(data)
-
-    regex = re.compile('.*b\-table\_\_col*')
-    
-    i = 0
-    for div in soup.findAll("td", {"class" : regex}):
-        try:
-            if not ":" in div.contents[0] and re.match(r'\d+', div.contents[0].replace("  ","").replace("\\n","")):
-                data.loc[i,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
-                data.loc[i+1,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
-                i+=2
-        except: pass
-    
-    i=0
-    for div in soup.findAll("td", {"class" : regex}):
-        try:
-            if re.match(r'(\b[WL]\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")) or \
-            re.match(r'(\b(SD)\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
-                data.loc[i,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
-                data.loc[i+1,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
-                i+=2
-        except: pass
-    
-    i=0
-    for div in soup.findAll("td", {"class" : regex}):
-        try:
-            if re.match(r'(KO.+|.+Dec.+|Sub.+|Overt.+|DQ)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
-                data.loc[i,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
-                data.loc[i+1,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
-                i+=2
-        except: pass
-
-    divre1 = re.compile('.*fighter\_one.*')
-    i = 0
-    j = 0
-    for div in soup.findAll("div", {"class" : divre1}):
-        data.loc[i,j] = int(div.contents[0])
-        j+=1
-        if j==4:
-            j=0
-            i+=2
-
-    divre2 = re.compile('.*fighter\_two.*')
-    i = 1
-    j = 0
-    for div in soup.findAll("div", {"class" : divre2}):
-        data.loc[i,j] = int(div.contents[0])
-        j+=1
-        if j==4:
-            j=0
-            i+=2
-
-    data = data[0:correctRange]
-    data = data.rename(index=str, columns={0: "Strike",1: "TakeDowns",2: "SubAtts",3: "GPasses"})
-    data = data[['Name','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
-    
-    return(data)
-
-
 def getRDSVitalstats(name,soup):
     data = pd.DataFrame()
     i = 0
@@ -204,21 +134,125 @@ def getRDSVitalstats(name,soup):
     
     return data
 
+def getRDSTablestats(name,soup):
+
+    ###I BELIEVE THE HREF IN THE NAMES HAS OPPONENT LINK...POSSIBILITY TO COMPILE ALL OPPONENTS...
+
+    data = pd.DataFrame()
+    i = 0
+    
+    for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
+        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","").replace("\n","").replace("\\","")
+        i+=1
+
+    correctRange = len(data)
+##    print(data)
+    regex = re.compile('.*b\-table\_\_col*')
+
+    i=0
+    for div in soup.findAll("td", {"class" : regex}):
+        try:
+            if re.match(r'(\b[WL]\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")) or \
+            re.match(r'(\b(SD)\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")) or \
+            re.match(r'(\b(NEXT)\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
+                data.loc[i,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
+                data.loc[i+1,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
+                i+=2
+        except: pass
+##    print(data)
+    
+    if data['WinLoss'][0] == "NEXT" : i = 2
+    else: i = 0
+    for div in soup.findAll("td", {"class" : regex}):
+        try:
+            if not ":" in div.contents[0] and re.match(r'(\d+)', div.contents[0].replace("  ","").replace("\\n","")):
+                data.loc[i,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
+                data.loc[i+1,'Round'] = int(div.contents[0].replace("  ","").replace("\\n",""))
+                i+=2
+        except: pass
+##    print(data)
+    
+    if data['WinLoss'][0] == "NEXT" : i = 2
+    else: i = 0
+    for div in soup.findAll("td", {"class" : regex}):
+        try:
+            if re.match(r'(KO.+|.+Dec.+|Sub.+|Overt.+|DQ)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
+                data.loc[i,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
+                data.loc[i+1,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
+                i+=2
+        except: pass
+##    print(data)
+    
+    divre1 = re.compile('.*fighter\_one.*')
+    if data['WinLoss'][0] == "NEXT" : i = 2
+    else: i = 0
+    j = 0
+    for div in soup.findAll("div", {"class" : divre1}):
+        try:
+            data.loc[i,j] = int(div.contents[0])
+            j+=1
+            if j==4:
+                j=0
+                i+=2
+        except: pass
+##    print(data)
+
+    divre2 = re.compile('.*fighter\_two.*')
+    if data['WinLoss'][0] == "NEXT" : i = 3
+    else: i = 1
+    j = 0
+    for div in soup.findAll("div", {"class" : divre2}):
+        try:
+            data.loc[i,j] = int(div.contents[0])
+            j+=1
+            if j==4:
+                j=0
+                i+=2
+        except: pass
+##    print(data)
+
+    data = data[0:correctRange]
+    data = data.rename(index=str, columns={0: "Strike",1: "TakeDowns",2: "SubAtts",3: "GPasses"})
+    data = data[['Name','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
+    
+    return(data)
+
+
+def getReachWt(data):
+    factor1 = float(data['HeightCM'])*.02
+    ArmWt = ((float(data['ReachCM']) - float(data['HeightCM']))/factor1)*0.1
+    return(ArmWt)
 
 
 
 
+def defineWeights(vit,pf):
+    reachWt = getReachWt(vit)
+    print(str(reachWt))
+    return
 
 
 
-name = "Jon Jones"
+##name = "Jon Jones"
+name = "Artem Lobov"
 data = URLFetch(name, config, False)
 soup = getHTML(name,data['url'], False)
+
+##print(soup.prettify())
+
 tabledata = getRDSTablestats(name,soup)
 vitaldata = getRDSVitalstats(name,soup)
 
 
-writer = pd.ExcelWriter('Report.xlsx')
+data = defineWeights(vitaldata,tabledata)
+
+
+##vitals_factor
+##prevfights_factor
+
+
+
+writer = pd.ExcelWriter(name + '_Report.xlsx')
 vitaldata.to_excel(writer,sheet_name=name,startrow=0, startcol=0, index=False)
 tabledata.to_excel(writer,sheet_name=name,startrow=3, startcol=0, index=False)
 writer.save()
