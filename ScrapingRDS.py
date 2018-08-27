@@ -78,7 +78,7 @@ def getRDSstats(name,soup):
     data = pd.DataFrame()
     i = 0
     for div in soup.find("div").findAll("a", href=lambda href: href and "fighter" in href):
-        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","")
+        data.loc[i,'Name'] = div.contents[0].replace("  ","").replace("\\n","").replace("\n","")
         i+=1
     correctRange = len(data)
     
@@ -95,7 +95,8 @@ def getRDSstats(name,soup):
     i=0
     for div in soup.findAll("td", {"class" : regex}):
         try:
-            if re.match(r'(\b[WL]\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
+            if re.match(r'(\b[WL]\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")) or \
+            re.match(r'(\b(SD)\b)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
                 data.loc[i,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 data.loc[i+1,'WinLoss'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 i+=2
@@ -103,7 +104,7 @@ def getRDSstats(name,soup):
     i=0
     for div in soup.findAll("td", {"class" : regex}):
         try:
-            if re.match(r'(KO.+|.+Dec.+|Sub.+)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
+            if re.match(r'(KO.+|.+Dec.+|Sub.+|Overt.+)', div.contents[1].get_text().replace("  ","").replace("\\n","")):
                 data.loc[i,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 data.loc[i+1,'EndMethod'] = div.contents[1].get_text().replace("  ","").replace("\\n","")
                 i+=2
@@ -142,16 +143,16 @@ def getRDSstats(name,soup):
 ##soup = BeautifulSoup(raw_html, 'lxml')
 ##url = getRDSsite(name, name + ' "Saas" rds.fightmetric.com')
 #soup = readPreviousHTML(name)
-#print(soup.prettify())
 
 
-name = "Jon Jones"  #lol wtf, chael sonnen....gotta look closer in JJ, think it's something with the belt.
-#missing round info and method...+ says he won against DC (no content, reversed)
 
-
+name = "Jon Jones"  
 ##name = "Cory Sandhagen"
 ##name = "Michael Johnson"
-soup = getHTML(name,True)
+soup = getHTML(name,False)
+
+print(soup.prettify())
+
 data = getRDSstats(name,soup)
 #woot, works on both .ca and .com
 print(str(data))
