@@ -13,6 +13,8 @@ from decimal import *
 import datetime
 import time
 from datetime import date, datetime, time, timedelta
+import itertools
+from timeit import default_timer as timer
 
 pd.set_option('display.max_colwidth', -1)
 
@@ -305,7 +307,6 @@ def getFighter(name,config):
 ##Weight = getFighter(name,config)
 ########################FOR INDIVIDUAL TESTING PURPOSES######################
 
-
 data = pd.read_csv('DKSalaries.csv')
 data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
 data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
@@ -343,7 +344,56 @@ writer.save()
 
 
 
+combs = list(itertools.combinations(data['DKID'], 6))
+combs = pd.DataFrame(combs)
+print(str(len(combs)) + " Permutations found.") 
+print("Starting Info Update & Printing...") 
+finalcombs = pd.DataFrame(columns=[0,1,2,3,4,5,"Conflict","Salary","Weight"])
+goodOnes = 0
+for i, v in combs.iterrows():
+    opList = []
+    fiList = []
+    sal = 0
+    wt = 0
+    conflict = 0
+    for j in v:
+        line = data[data.DKID == str(j)]
+        sal += float(line.Salary)
+        wt += float(line.Weight)
+        opList.append(str(line.Opponent))
+        fiList.append(str(line.Fighter))
+        if len(fiList)>0 and len(opList)>0 and conflict == 0:
+            for pp in fiList:
+                g = re.search(r'\d+\s+(.+)',str(pp))
+                f1 = str(g.group(1))
+                for px in opList:
+                    g = re.search(r'\d+\s+(.+)',str(px))
+                    f2 = str(g.group(1))
+                    if f1 == f2:
+                        conflict = 1
+    if(int(conflict) == 0 and float(sal)<=50000):
+        finalcombs.loc[goodOnes,0] = v[0]
+        finalcombs.loc[goodOnes,1] = v[1]
+        finalcombs.loc[goodOnes,2] = v[2]
+        finalcombs.loc[goodOnes,3] = v[3]
+        finalcombs.loc[goodOnes,4] = v[4]
+        finalcombs.loc[goodOnes,5] = v[5]
+        finalcombs.loc[goodOnes,'Conflict'] = int(conflict)
+        finalcombs.loc[goodOnes,'Salary'] = float(sal)
+        finalcombs.loc[goodOnes,'Weight'] = float(wt)
+        goodOnes += 1
+    print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
 
+####DO SOME KIND OF COUNTIF names == names in MUST HAVE list#####
+
+
+print("Finished Info Update & Printing...")
+
+dt = date.today()
+dt = dt.strftime("%d%b%Y")
+writer = pd.ExcelWriter('DKCombinations_' + dt + '.xlsx')
+finalcombs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+writer.save()
 
 
 
