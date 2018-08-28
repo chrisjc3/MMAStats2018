@@ -299,14 +299,14 @@ def getFighter(name,config):
     return(Weight, vitaldata) 
 
 
-########################FOR INDIVIDUAL TESTING PURPOSES######################
+########################FOR INDIVIDUAL TESTING PURPOSES####################################################################
 ##name = "Jon Jones"
 ##name = "Artem Lobov"
 ##name = "Cory Sandhagen"
 ##name = "Kalindra Faria "
 ##Weight = getFighter(name,config)
-########################FOR INDIVIDUAL TESTING PURPOSES######################
-
+########################FOR INDIVIDUAL TESTING PURPOSES####################################################################
+########################PUT THIS SHIT UP TOP AND USE BY NAME IF YOU'RE PLUGGING IT INTO EXCEL OR WHATEVER...###############
 data = pd.read_csv('DKSalaries.csv')
 data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
 data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
