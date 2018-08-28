@@ -299,6 +299,116 @@ def getFighter(name,config):
     return(Weight, vitaldata) 
 
 
+##############################################################################################################################
+##############################################################################################################################
+##########################################  REPORTING           ##############################################################
+##############################################################################################################################
+##############################################################################################################################
+
+def InAndOutDK():
+    data = pd.read_csv('DKSalaries.csv')
+    data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
+    data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
+    for i, v in data.iterrows():
+        g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
+        nm1 = str(g.group(1))
+        nm2 = str(g.group(2))
+        if nm1 == v['TeamAbbrev']:
+            data.loc[i,'Fighter'] = nm1
+            data.loc[i,'Opponent'] = nm2
+        else:
+            data.loc[i,'Fighter'] = nm2
+            data.loc[i,'Opponent'] = nm1
+        data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
+
+    compiledVitals = pd.DataFrame()
+
+    for i, v in data.iterrows():
+        g = re.search(r'(.+)(\(.+)',str(v['DKID']))
+        name = str(g.group(1))
+        Weight, vitaldata = getFighter(name,config)
+        data.loc[i,'Weight'] = float(Weight)
+        compiledVitals = compiledVitals.append(vitaldata, ignore_index=True)
+
+
+    data = data[['DKID','Salary','Weight','Fighter','Opponent']]
+    frames = [data, compiledVitals]
+    data = pd.concat(frames, axis=1, sort=False)
+
+##    dt = date.today()
+##    dt = dt.strftime("%d%b%Y")
+##    writer = pd.ExcelWriter('DKReport_' + dt + '.xlsx')
+    writer = pd.ExcelWriter('DKReport.xlsx')
+    data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+    writer.save()
+
+
+def InAndOutCombinations():
+    data = pd.read_excel('DKReport.xlsx')
+    
+    combs = list(itertools.combinations(data['DKID'], 6))
+    combs = pd.DataFrame(combs)
+    print(str(len(combs)) + " Permutations found.") 
+    print("Starting Info Update & Printing...") 
+    finalcombs = pd.DataFrame(columns=[0,1,2,3,4,5,"Conflict","Salary","Weight"])
+    goodOnes = 0
+    for i, v in combs.iterrows():
+        opList = []
+        fiList = []
+        sal = 0
+        wt = 0
+        conflict = 0
+        for j in v:
+            line = data[data.DKID == str(j)]
+            sal += float(line.Salary)
+            wt += float(line.Weight)
+            opList.append(str(line.Opponent))
+            fiList.append(str(line.Fighter))
+            if len(fiList)>0 and len(opList)>0 and conflict == 0:
+                for pp in fiList:
+                    g = re.search(r'\d+\s+(.+)',str(pp))
+                    f1 = str(g.group(1))
+                    for px in opList:
+                        g = re.search(r'\d+\s+(.+)',str(px))
+                        f2 = str(g.group(1))
+                        if f1 == f2:
+                            conflict = 1
+        if(int(conflict) == 0 and float(sal)<=50000):
+            finalcombs.loc[goodOnes,0] = v[0]
+            finalcombs.loc[goodOnes,1] = v[1]
+            finalcombs.loc[goodOnes,2] = v[2]
+            finalcombs.loc[goodOnes,3] = v[3]
+            finalcombs.loc[goodOnes,4] = v[4]
+            finalcombs.loc[goodOnes,5] = v[5]
+            finalcombs.loc[goodOnes,'Conflict'] = int(conflict)
+            finalcombs.loc[goodOnes,'Salary'] = float(sal)
+            finalcombs.loc[goodOnes,'Weight'] = float(wt)
+            goodOnes += 1
+        print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
+    print("Finished Info Update & Printing...")
+##    dt = date.today()
+##    dt = dt.strftime("%d%b%Y")
+##    writer = pd.ExcelWriter('DKCombinations_' + dt + '.xlsx')
+    writer = pd.ExcelWriter('DKCombinations.xlsx')
+    finalcombs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+    writer.save()
+
+
+def updateCombswPreferables(wants):
+    data = pd.read_excel('DKCombinations.xlsx')
+    counter=0
+    for i, v in data.iterrows():
+        counter=0
+        for j in v:
+            for s in wants:
+                if str(s) in str(j):
+                    counter+=1
+        data.loc[i,'WantedCtr'] = counter
+        print("Records Checked: " + str(i) + " out of length: " + str(len(data)))
+    writer = pd.ExcelWriter('DKCombinations_wWants.xlsx')
+    data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+    writer.save()
+            
 ########################FOR INDIVIDUAL TESTING PURPOSES####################################################################
 ##name = "Jon Jones"
 ##name = "Artem Lobov"
@@ -308,93 +418,14 @@ def getFighter(name,config):
 ########################FOR INDIVIDUAL TESTING PURPOSES####################################################################
 ########################PUT THIS SHIT UP TOP AND USE BY NAME IF YOU'RE PLUGGING IT INTO EXCEL OR WHATEVER...###############
 ########################DELTE BELOW HERE IN THAT CASE######################################################################
-data = pd.read_csv('DKSalaries.csv')
-data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
-data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
-for i, v in data.iterrows():
-    g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
-    nm1 = str(g.group(1))
-    nm2 = str(g.group(2))
-    if nm1 == v['TeamAbbrev']:
-        data.loc[i,'Fighter'] = nm1
-        data.loc[i,'Opponent'] = nm2
-    else:
-        data.loc[i,'Fighter'] = nm2
-        data.loc[i,'Opponent'] = nm1
-    data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
 
-compiledVitals = pd.DataFrame()
+####need to try backtesting...knock first fight on record minus next back a peg....
+#print pf and weights and make sure it's matching up to last contest results per fighter...
 
-for i, v in data.iterrows():
-    g = re.search(r'(.+)(\(.+)',str(v['DKID']))
-    name = str(g.group(1))
-    Weight, vitaldata = getFighter(name,config)
-    data.loc[i,'Weight'] = float(Weight)
-    compiledVitals = compiledVitals.append(vitaldata, ignore_index=True)
+InAndOutDK() 
+InAndOutCombinations()
+updateCombswPreferables(wants = ['Bryan Barberena','Eryk Anders','Cory Sandhagen','Mickey Gall'])
 
-
-data = data[['DKID','Salary','Weight','Fighter','Opponent']]
-frames = [data, compiledVitals]
-data = pd.concat(frames, axis=1, sort=False)
-
-dt = date.today()
-dt = dt.strftime("%d%b%Y")
-writer = pd.ExcelWriter('DKReport_' + dt + '.xlsx')
-data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
-writer.save()
-
-
-
-combs = list(itertools.combinations(data['DKID'], 6))
-combs = pd.DataFrame(combs)
-print(str(len(combs)) + " Permutations found.") 
-print("Starting Info Update & Printing...") 
-finalcombs = pd.DataFrame(columns=[0,1,2,3,4,5,"Conflict","Salary","Weight"])
-goodOnes = 0
-for i, v in combs.iterrows():
-    opList = []
-    fiList = []
-    sal = 0
-    wt = 0
-    conflict = 0
-    for j in v:
-        line = data[data.DKID == str(j)]
-        sal += float(line.Salary)
-        wt += float(line.Weight)
-        opList.append(str(line.Opponent))
-        fiList.append(str(line.Fighter))
-        if len(fiList)>0 and len(opList)>0 and conflict == 0:
-            for pp in fiList:
-                g = re.search(r'\d+\s+(.+)',str(pp))
-                f1 = str(g.group(1))
-                for px in opList:
-                    g = re.search(r'\d+\s+(.+)',str(px))
-                    f2 = str(g.group(1))
-                    if f1 == f2:
-                        conflict = 1
-    if(int(conflict) == 0 and float(sal)<=50000):
-        finalcombs.loc[goodOnes,0] = v[0]
-        finalcombs.loc[goodOnes,1] = v[1]
-        finalcombs.loc[goodOnes,2] = v[2]
-        finalcombs.loc[goodOnes,3] = v[3]
-        finalcombs.loc[goodOnes,4] = v[4]
-        finalcombs.loc[goodOnes,5] = v[5]
-        finalcombs.loc[goodOnes,'Conflict'] = int(conflict)
-        finalcombs.loc[goodOnes,'Salary'] = float(sal)
-        finalcombs.loc[goodOnes,'Weight'] = float(wt)
-        goodOnes += 1
-    print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
-
-####DO SOME KIND OF COUNTIF names == names in MUST HAVE list#####
-
-
-print("Finished Info Update & Printing...")
-
-dt = date.today()
-dt = dt.strftime("%d%b%Y")
-writer = pd.ExcelWriter('DKCombinations_' + dt + '.xlsx')
-finalcombs.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
-writer.save()
 
 
 
