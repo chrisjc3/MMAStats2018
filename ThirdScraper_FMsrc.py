@@ -248,7 +248,8 @@ def getEndMethodWt(name,pf,howMany):
     pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
     pf = pf[pf.WinLoss.str.contains("nc") == False]
-    npf = pf[0:howMany]
+##    npf = pf[0:howMany]
+    npf = pf[1:howMany] #BACKTESTING
     resultWt = Decimal(0)
     for i, v in npf.iterrows():
         if str(v['WinLoss']) == "win":
@@ -269,8 +270,8 @@ def getEndMethodWt(name,pf,howMany):
 def getTendencyWts(name,pf,howMany):
     pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
-    npf = pf[0:howMany]
-
+##    npf = pf[0:howMany]
+    npf = pf[1:howMany] #BACKTESTING
     stkWt = Decimal(sum(npf['Strike']))*Decimal(0.005)
     tdWt = Decimal(sum(npf['TakeDowns']))*Decimal(0.02)
     subWt = Decimal(sum(npf['SubAtts']))*Decimal(0.0025)
@@ -384,8 +385,9 @@ def InAndOutCombinations():
             finalcombs.loc[goodOnes,'Salary'] = float(sal)
             finalcombs.loc[goodOnes,'Weight'] = float(wt)
             goodOnes += 1
-        print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + str(i))
-    print("Finished Info Update & Printing...")
+        print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + \
+              str(i) + " -- out of Total records: " + str(len(combs)))
+    print("Combinations updated. Printing...")
 ##    dt = date.today()
 ##    dt = dt.strftime("%d%b%Y")
 ##    writer = pd.ExcelWriter('DKCombinations_' + dt + '.xlsx')
@@ -394,17 +396,25 @@ def InAndOutCombinations():
     writer.save()
 
 
-def updateCombswPreferables(wants):
+####SHOULD ADD A DEFINITELY DO NOT WANT...
+def updateCombswPreferables(wants, donotwants):
+    print("Setting up pref lists and setting up counter column")
     data = pd.read_excel('DKCombinations.xlsx')
-    counter=0
     for i, v in data.iterrows():
-        counter=0
+        wcounter=0
+        dcounter=0
         for j in v:
             for s in wants:
                 if str(s) in str(j):
-                    counter+=1
-        data.loc[i,'WantedCtr'] = counter
+                    wcounter+=1
+            for s in donotwants:
+                if str(s) in str(j):
+                    dcounter+=1
+        data.loc[i,'WantedCtr'] = wcounter
+        data.loc[i,'NotWantedCtr'] = dcounter
         print("Records Checked: " + str(i) + " out of length: " + str(len(data)))
+
+    print("Counter column added. Printing...")
     writer = pd.ExcelWriter('DKCombinations_wWants.xlsx')
     data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
     writer.save()
@@ -419,14 +429,28 @@ def updateCombswPreferables(wants):
 ########################PUT THIS SHIT UP TOP AND USE BY NAME IF YOU'RE PLUGGING IT INTO EXCEL OR WHATEVER...###############
 ########################DELTE BELOW HERE IN THAT CASE######################################################################
 
-####need to try backtesting...knock first fight on record minus next back a peg....
-#print pf and weights and make sure it's matching up to last contest results per fighter...
+##############################################################################################################################
+##############################################################################################################################
+##########################################  MAIN FUNCTIONS      ##############################################################
+##############################################################################################################################
+##############################################################################################################################
+
 
 InAndOutDK() 
 InAndOutCombinations()
-updateCombswPreferables(wants = ['Bryan Barberena','Eryk Anders','Cory Sandhagen','Mickey Gall'])
+updateCombswPreferables(wants = ['Bryan Barberena','Cory Sandhagen','Deiveson Figueiredo','Rani Yahya'],
+                        donotwants = ['Jon Tuck', 'Andre Fili'])
 
+#App would read in DK salaries and make a table out of names....2 check boxes, want + don't want...add checks to lists...
+#button to filedialogue to the DK salaries...run InAndOutDK to populate the table...show the vitals table next to each fighter +
+#custom weights.
+#run button to do InAndOutCombinations and updateCombswPreferables...need checks in second function for in case either set
+#of checkboxes is blank
+#could have a table to customize the weight factors
 
+#or just keep it all to myself...maybe wait on the app until after i use it a few times and get it working well.
+
+print("All Done.")
 
 
 
