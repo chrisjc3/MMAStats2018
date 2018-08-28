@@ -307,6 +307,7 @@ def getFighter(name,config):
 ##Weight = getFighter(name,config)
 ########################FOR INDIVIDUAL TESTING PURPOSES####################################################################
 ########################PUT THIS SHIT UP TOP AND USE BY NAME IF YOU'RE PLUGGING IT INTO EXCEL OR WHATEVER...###############
+########################DELTE BELOW HERE IN THAT CASE######################################################################
 data = pd.read_csv('DKSalaries.csv')
 data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
 data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
