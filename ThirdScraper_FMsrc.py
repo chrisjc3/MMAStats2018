@@ -179,6 +179,11 @@ def getRDSTablestats(name,soup):
     data[['Strike','TakeDowns','SubAtts','GPasses','Round']] = data[['Strike','TakeDowns','SubAtts','GPasses','Round']].apply(pd.to_numeric)
     
 ##    print(data)
+    writer = pd.ExcelWriter(name + '_PevFightTable.xlsx')
+    data.to_excel(writer,sheet_name='Sheet1',startrow=0, startcol=0, index=False)
+    writer.save()
+
+    
     return(data)
 
 def getRDSVitalstats(name,soup):
@@ -248,8 +253,8 @@ def getEndMethodWt(name,pf,howMany):
     pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
     pf = pf[pf.WinLoss.str.contains("nc") == False]
-##    npf = pf[0:howMany]
-    npf = pf[1:howMany] #BACKTESTING
+    npf = pf[0:howMany]
+##    npf = pf[1:howMany] #BACKTESTING
     resultWt = Decimal(0)
     for i, v in npf.iterrows():
         if str(v['WinLoss']) == "win":
@@ -270,14 +275,24 @@ def getEndMethodWt(name,pf,howMany):
 def getTendencyWts(name,pf,howMany):
     pf = pf[pf.Name.str.contains(name.strip()) == True]
     pf = pf[pf.WinLoss.str.contains("next") == False]
-##    npf = pf[0:howMany]
-    npf = pf[1:howMany] #BACKTESTING
+    npf = pf[0:howMany]
+##    npf = pf[1:howMany] #BACKTESTING
     stkWt = Decimal(sum(npf['Strike']))*Decimal(0.005)
     tdWt = Decimal(sum(npf['TakeDowns']))*Decimal(0.02)
     subWt = Decimal(sum(npf['SubAtts']))*Decimal(0.0025)
     passWt = Decimal(sum(npf['GPasses']))*Decimal(0.01)
     TendencyWt = Decimal(stkWt)+Decimal(tdWt)+Decimal(subWt)+Decimal(passWt)
     return(round(TendencyWt,3))
+
+
+
+
+
+
+
+
+
+
     
 def defineWeights(name,vit,pf):
     reachWt = getReachWt(vit)
@@ -289,6 +304,7 @@ def defineWeights(name,vit,pf):
     Weight = Decimal(reachWt) + Decimal(EndMethodWt) + Decimal(TendencyWt)
     return(round(Weight,3))
 
+
 def getFighter(name,config):
     data = URLFetch(name, config, False)
     soup = getHTML(name,data['url'], False)
@@ -297,7 +313,7 @@ def getFighter(name,config):
     tabledata = getRDSTablestats(name,soup)
     Weight = defineWeights(name,vitaldata,tabledata)
 ##    print(str(Weight))
-    return(Weight, vitaldata) 
+    return(Weight, vitaldata)
 
 
 ##############################################################################################################################
@@ -305,6 +321,7 @@ def getFighter(name,config):
 ##########################################  REPORTING           ##############################################################
 ##############################################################################################################################
 ##############################################################################################################################
+
 
 def InAndOutDK():
     data = pd.read_csv('DKSalaries.csv')
@@ -387,6 +404,9 @@ def InAndOutCombinations():
             goodOnes += 1
         print("Acceptable Permutations found: " + str(goodOnes) + " -- Total records scanned: " + \
               str(i) + " -- out of Total records: " + str(len(combs)))
+        
+#maybe take out entries under the mean of weight....
+    
     print("Combinations updated. Printing...")
 ##    dt = date.today()
 ##    dt = dt.strftime("%d%b%Y")
@@ -435,6 +455,10 @@ def updateCombswPreferables(wants, donotwants):
 ##############################################################################################################################
 ##############################################################################################################################
 
+
+#A weight/salary type of column might be helpful...
+
+#Printing out the pf tables for each fighter would be helpful for now
 
 InAndOutDK() 
 InAndOutCombinations()
