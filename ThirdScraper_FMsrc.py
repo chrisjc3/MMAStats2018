@@ -326,6 +326,10 @@ def getFighter(name,config):
 def InAndOutDK():
     data = pd.read_csv('DKSalaries.csv')
     data = data[['Name','ID','Salary','AvgPointsPerGame','Game Info','TeamAbbrev']]
+    data = data[data['Game Info'].str.contains("Cancelled") == False]
+
+    
+    
     data = data.sort_values(by=['AvgPointsPerGame','Salary'], ascending=False)
     for i, v in data.iterrows():
         g = re.search(r'(\w+)\@(\w+)\s.+',str(v['Game Info']))
@@ -340,6 +344,7 @@ def InAndOutDK():
         data.loc[i,'DKID'] = str(v['Name']) + " (" + str(v['ID']) +")"
 
     compiledVitals = pd.DataFrame()
+    
 
     for i, v in data.iterrows():
         g = re.search(r'(.+)(\(.+)',str(v['DKID']))
@@ -348,9 +353,13 @@ def InAndOutDK():
         data.loc[i,'Weight'] = float(Weight)
         compiledVitals = compiledVitals.append(vitaldata, ignore_index=True)
 
-
+    
     data = data[['DKID','Salary','Weight','Fighter','Opponent']]
+    
+    data.reset_index(drop=True, inplace=True)
+    compiledVitals.reset_index(drop=True, inplace=True)
     frames = [data, compiledVitals]
+    
     data = pd.concat(frames, axis=1, sort=False)
 
 ##    dt = date.today()
@@ -462,8 +471,8 @@ def updateCombswPreferables(wants, donotwants):
 
 InAndOutDK() 
 InAndOutCombinations()
-updateCombswPreferables(wants = ['Bryan Barberena','Cory Sandhagen','Deiveson Figueiredo','Rani Yahya'],
-                        donotwants = ['Jon Tuck', 'Andre Fili'])
+updateCombswPreferables(wants = ['Tatiana Suarez',,'Zabit Magomedsharipov','Charles Byrd'],
+                        donotwants = ['Valentina Shevchenko','Darren Till','Tyron Woodley','Darren Stewart','Alex White','Brandon Davis','Nicco Montano','Carla Esparza','Diego Sanchez','Jim Miller'])
 
 #App would read in DK salaries and make a table out of names....2 check boxes, want + don't want...add checks to lists...
 #button to filedialogue to the DK salaries...run InAndOutDK to populate the table...show the vitals table next to each fighter +
