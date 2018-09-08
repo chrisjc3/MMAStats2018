@@ -195,6 +195,10 @@ def getRDSTablestats(name,soup):
         if name.strip() == v['Name'].strip():
             fauxelo_bs = Decimal(0)
             tmp_data = data[data.Name.str.contains(v['Name'].strip()) == True]
+            tmp_data = tmp_data[tmp_data.WinLoss.str.contains("next") == False]
+            tmp_data = tmp_data[0:4]
+
+##            print(str(tmp_data))
             for j, k in tmp_data.iterrows():
                 if k['WinLoss'] == "win":
                     if(re.match(r'(KO.*|SUB.*)',k['EndMethod'])):
@@ -233,7 +237,7 @@ def getRDSTablestats(name,soup):
                 tmp_data.loc[i2,'fmUrl'] = div['href']
                 i2+=1
 
-            tmp_correctRange = len(data)
+##            tmp_correctRange = len(data)
 
             regex = re.compile('b\-flag\_\_text')
             i2=0
@@ -268,7 +272,8 @@ def getRDSTablestats(name,soup):
                             i2+=2
             tmp_data = tmp_data.rename(index=str, columns={0: "Strike",1: "TakeDowns",2: "SubAtts",3: "GPasses",4: "EndMethod",5: "Round"})
             tmp_data = tmp_data[tmp_data.Name.str.contains(tmp_name.strip()) == True]
-            tmp_data = tmp_data[0:tmp_correctRange]
+            tmp_data = tmp_data[tmp_data.WinLoss.str.contains("next") == False]
+            tmp_data = tmp_data[0:4]
 ##            print(tmp_data)
 
             
@@ -307,12 +312,7 @@ def getRDSTablestats(name,soup):
 
 #####DETERMINE SOME KIND OF FINAL ELO based on previous fights of previous fights....
 ###MAYBE ONLY USE LAST x Fights...people like Diego Sanchez are rated too high
-
-
-
-
-
-                    
+               
 
     data = data[['Name','FakeELO','Strike','TakeDowns','SubAtts','GPasses','WinLoss','Round','EndMethod']]
     data[['Strike','TakeDowns','SubAtts','GPasses','Round']] = data[['Strike','TakeDowns','SubAtts','GPasses','Round']].apply(pd.to_numeric)
@@ -422,15 +422,47 @@ def getTendencyWts(name,pf,howMany):
     TendencyWt = Decimal(stkWt)+Decimal(tdWt)+Decimal(subWt)+Decimal(passWt)
     return(round(TendencyWt,3))
 
-def getELOWt(name,pf):
-    return
-##    pf = pf[pf.Name.str.contains(name.strip()) == False]
-##    pf = pf[pf.WinLoss.str.contains("next") == False]
+
+
+def Probability(rating1, rating2):
+    return 1.0 * 1.0 / (1 + 1.0 * math.pow(10, 1.0 * (rating1 - rating2) / 400))
+
+
+def EloRating(Ra, Rb, K, winloss, EM):
+    Pb = Probability(Ra, Rb)
+    Pa = Probability(Rb, Ra)
+
+    if(re.match(r'(KO.*|SUB.*)',EM)):
+        if K == 1:
+            K = 1
+        if K == 2:
+            K = .8
+        if K == 3:
+            K = .6
+        if K == 4:
+            K = .4
+        if K == 5:
+            K = .2
+    else: K = .05
+
+    if (winloss == "win") :
+        Ra = Ra + K * (1 - Pa)
+    if (winloss == "loss") :
+        Ra = Ra + K * (0 - Pa)
+
+    return(Ra)
+
+        
+def getELOWt(name,pf,howMany):
+    pf = pf[pf.WinLoss.str.contains("next") == False]
+    pf = pf[0:howMany*2]
 ##    print(pf)
-##    for i, v in pf.iterrows():
-##        
-
-
+    for i in range(0,len(pf),2):
+        if i == 0:
+            elo = EloRating(float(pf['FakeELO'][i]), float(pf['FakeELO'][i+1]), float(pf['Round'][i]), str(pf['WinLoss'][i]),str(pf['EndMethod'][i]))
+        else:
+            elo = EloRating(float(elo), float(pf['FakeELO'][i+1]), float(pf['Round'][i]), str(pf['WinLoss'][i]),str(pf['EndMethod'][i]))
+    return(round(elo,4))
 
 
 
@@ -443,15 +475,10 @@ def defineWeights(name,vit,pf):
 ##    print("End Method Wt: " + str(EndMethodWt))
     TendencyWt = getTendencyWts(name, pf, 3)   #how_many previous fights to look at
 ##    print("Tendency Wt: " + str(TendencyWt))
+    ELOwt = getELOWt(name,pf,3)
+    Weight = Decimal(reachWt) + Decimal(EndMethodWt) + Decimal(TendencyWt) + Decimal(ELOwt)
 
-    ELOwt = getELOWt(name,pf)
-
-    
-    Weight = Decimal(reachWt) + Decimal(EndMethodWt) + Decimal(TendencyWt)
-
-    
-    
-    return(round(Weight,3))
+    return(round(Weight,4))
 
 
 def getFighter(name,config):
@@ -619,9 +646,9 @@ def updateCombswPreferables(wants, donotwants):
 #Printing out the pf tables for each fighter would be helpful for now
 
 InAndOutDK() 
-##InAndOutCombinations()
-##updateCombswPreferables(wants = ['Zabit Magomedsharipov','Jessica Andrade','Jarred Brooks','Craig White','Tatiana Suarez','Geoffrey Neal','Charles Byrd','Alex White'],
-##                        donotwants = ['Brandon Davis','Roberto Sanchez','Diego Sanchez','Carla Esparza','Darren Stewart','Irene Aldana','Lucie Pudilova'])
+InAndOutCombinations()
+updateCombswPreferables(wants = ['Zabit Magomedsharipov','Jessica Andrade','Jarred Brooks','Craig White','Tatiana Suarez','Geoffrey Neal','Charles Byrd','Alex White'],
+                        donotwants = ['Brandon Davis','Roberto Sanchez','Diego Sanchez','Carla Esparza','Darren Stewart','Irene Aldana','Lucie Pudilova'])
 
 
 #App would read in DK salaries and make a table out of names....2 check boxes, want + don't want...add checks to lists...
