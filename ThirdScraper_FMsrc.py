@@ -30,6 +30,9 @@ config = {
     'output_filename': ''
 }
 
+####WAITING FOR UPDATES TO GOOGLESCRAPER, NOT WORKING AS OF NOW. PROJECT PICKED BACK UP RECENTLY -- 06OCT18
+
+
 ##############################################################################################################################
 ##############################################################################################################################
 ##########################      URL/HTML GATHERING          ##################################################################
@@ -49,6 +52,7 @@ def insertNametoConfig_Search(name, config):
     try:
         search = scrape_with_config(config)
         data = readinJsonSearch(name)
+        print(str(data))
         url_json = {}
         for res in data[0]['results']:
             #matches last name only...but search is for full name....so should be right 99.9%...?
@@ -714,6 +718,10 @@ def updateCombswPreferables(wants, donotwants):
 
 InAndOutDK() 
 InAndOutCombinations()
+
+
+
+
 ##updateCombswPreferables(wants = ['Zabit Magomedsharipov','Jessica Andrade','Jarred Brooks','Craig White','Tatiana Suarez','Geoffrey Neal','Charles Byrd','Alex White'],
 ##                        donotwants = ['Brandon Davis','Roberto Sanchez','Diego Sanchez','Carla Esparza','Darren Stewart','Irene Aldana','Lucie Pudilova'])
 
